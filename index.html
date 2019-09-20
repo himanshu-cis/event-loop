@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<!-- saved from url=(0065)https://thomashunter.name/presentations/javascript-event-loop/#/5 -->
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+  <title>The JavaScript Event Loop</title>
+  <link rel="stylesheet" href="./The JavaScript Event Loop_files/reveal.css">
+  <link rel="stylesheet" href="./The JavaScript Event Loop_files/black.css" id="theme">
+  <link rel="stylesheet" href="./The JavaScript Event Loop_files/zenburn.css">
+  <style>
+    .reveal pre {
+      box-shadow: none;
+      margin: 0;
+      width: auto;
+    }
+
+    .reveal pre code {
+      font-size: 90%;
+      line-height: 1.2em;
+      max-height: none;
+    }
+
+    .reveal .hljs {
+      background-color: transparent;
+    }
+
+    .reveal h1,
+    .reveal h2,
+    .reveal h3,
+    .reveal h4,
+    .reveal h5,
+    .reveal h6 {
+      text-transform: none;
+      color: #affa42;
+    }
+
+    .reveal h1 {
+      color: #fff;
+    }
+
+    .reveal section img {
+      border: 0px;
+      background-color: transparent;
+      margin: 0px;
+      box-shadow: none;
+    }
+
+    .reveal .floater {
+      position: absolute;
+      top: 0px;
+    }
+
+    .reveal .floater code {
+      font-size: 0.5em;
+      display: block;
+    }
+
+    .reveal .floater-left {
+      left: 0px;
+    }
+
+    .reveal .floater-right {
+      right: 0px;
+    }
+
+    .reveal .slides section .fragment.highlight-current-green.current-fragment {
+      color: black;
+      background-color: #affa42;
+    }
+
+    .reveal .slides section .fragment.highlight-current-green.current-fragment * {
+      color: black;
+    }
+
+    .reveal .monospace {
+      font-family: monospace;
+    }
+
+    .dom-output {
+      max-height: 40px;
+      overflow: hidden;
+    }
+
+    .dom-output div {
+      width: 1px;
+      height: 1px;
+      background-color: #ff0000;
+      display: inline-block;
+    }
+
+    #fps-container {
+      zoom: 200%;
+    }
+
+    .reveal .image-walkthrough {
+      position: absolute;
+      left: -20%;
+      top: 25%;
+    }
+
+    #console-order-result {
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="fps-container">
+    <div
+      style="padding: 5px; min-width: 95px; height: 30px; line-height: 30px; text-align: right; text-shadow: rgb(34, 34, 34) 1px 1px 0px; background: rgb(34, 34, 34); color: rgb(255, 255, 255); border: 1px solid rgb(26, 26, 26); position: absolute; z-index: 10; left: auto; top: 5px; right: 5px; bottom: auto; margin: 0px; cursor: pointer;">
+      <div
+        style="position: absolute; top: 0px; right: 0px; padding: 5px 10px; height: 30px; font-size: 24px; font-family: Consolas, &quot;Andale Mono&quot;, monospace; z-index: 2; color: rgb(196, 245, 163);">
+        19.4</div>
+      <div
+        style="position: absolute; top: 0px; left: 0px; padding: 5px 10px; height: 30px; font-size: 12px; line-height: 32px; font-family: sans-serif; text-align: left; z-index: 2;">
+        ms</div>
+      <div style="position: relative; height: 100%; z-index: 1; width: 99px;">
+        <div style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 0px; width: 4px; height: 6px;">
+        </div>
+        <div style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 5px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 10px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 15px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 20px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 25px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 30px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 35px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 40px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 45px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 50px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 55px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 60px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 65px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 70px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 75px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 80px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 85px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 90px; width: 4px; height: 5px;">
+        </div>
+        <div
+          style="background: rgb(63, 63, 63); position: absolute; bottom: 0px; right: 95px; width: 4px; height: 5px;">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="reveal convex center" role="application" data-transition-speed="default"
+    data-background-transition="fade">
+    <div class="slides" style="width: 960px; height: 700px; zoom: 1.19829;">
+      <!-- <section class="past" style="top: 39px; display: none;" hidden="" aria-hidden="true">
+          <h2>The JavaScript Event Loop</h2>
+          <p>Presented by <a href="https://twitter.com/tlhunter">@tlhunter</a></p>
+          <a href="http://bit.ly/2hlATo2" class="monospace"><img src="./The JavaScript Event Loop_files/advanced-microservices.jpg" width="183" height="278" alt="Advanced Microservices"></a>
+          <p>Advanced Microservices: <a href="http://bit.ly/2hlATo2" class="monospace">thomashunter.name/ms</a></p>
+        </section> -->
+
+      <section class="past" style="top: 197px; display: none;" hidden="" aria-hidden="true">
+        <h1>Part I</h1>
+        <h2>JavaScript Overview</h2>
+      </section>
+
+      <section class="past" style="top: 172px; display: none;" hidden="" aria-hidden="true">
+        <h3>JavaScript is Single-Threaded</h3>
+        <ul>
+          <li>Makes use of a single CPU thread (think CPU core)</li>
+          <li>Nothing done inside JavaScript is “concurrent”</li>
+          <li>Easier to reason about than Multi-Threaded</li>
+          <li>Unfortunate side-effects such as Scroll Jank™</li>
+        </ul>
+      </section>
+
+      <section class="past" style="top: 0px; display: block;" hidden="" aria-hidden="true">
+        <h3>Technical Implementation</h3>
+        <ul>
+          <li>
+            <strong>Stack</strong>:
+            <ul>
+              <li>Function calls, context information</li>
+              <li>As functions call functions, add frames to stack</li>
+              <!-- Stack Depths vary by browser: http://stackoverflow.com/a/7828803/538646 -->
+            </ul>
+          </li>
+          <li>
+            <strong>Queue</strong> <em>(Many Languages Don't Have)</em>:
+            <ul>
+              <li>Work scheduled to be added to stack</li>
+              <li>E.g. <code>setTimeout()</code> and <code>setInterval()</code></li>
+            </ul>
+          </li>
+          <li>
+            <strong>Heap</strong>:
+            <ul>
+              <li>“Chaotic” collection of objects, context vars, etc.</li>
+              <li>Garbage Collection cleans items from heap</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Event Handlers</strong>:
+            <ul>
+              <li>Can add items to queue in the future</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section class="past" style="top: 0px; display: block;" hidden="" aria-hidden="true">
+        <h3>Queue/Stack/Heap Diagram</h3>
+
+        <p><small><em>The Event Loop is named after repeatedly taking work from the queue and making new
+              stacks.</em></small></p>
+
+        <img style="width: 400px;" src="./The JavaScript Event Loop_files/stack-heap-queue.svg">
+
+        <p><small>Image Credit: Mozilla Developer Network:<br><a
+              href="http://mzl.la/Y5Dh2x">http://mzl.la/Y5Dh2x</a></small></p>
+      </section>
+
+      <section class="present" style="top: 0px; display: block;">
+        <h3>Example Code-run</h3>
+        <div class="image-walkthrough">
+          <img id="walkthrough-0" src="./The JavaScript Event Loop_files/stack-queue-heap-00.png"
+            style="display: block;">
+          <img id="walkthrough-1" src="./The JavaScript Event Loop_files/stack-queue-heap-01.png"
+            style="display: none;">
+          <img id="walkthrough-2" src="./The JavaScript Event Loop_files/stack-queue-heap-02.png"
+            style="display: none;">
+          <img id="walkthrough-3" src="./The JavaScript Event Loop_files/stack-queue-heap-03.png"
+            style="display: none;">
+          <img id="walkthrough-4" src="./The JavaScript Event Loop_files/stack-queue-heap-04.png"
+            style="display: none;">
+          <img id="walkthrough-5" src="./The JavaScript Event Loop_files/stack-queue-heap-05.png"
+            style="display: none;">
+          <img id="walkthrough-6" src="./The JavaScript Event Loop_files/stack-queue-heap-06.png"
+            style="display: none;">
+          <img id="walkthrough-7" src="./The JavaScript Event Loop_files/stack-queue-heap-07.png"
+            style="display: none;">
+          <img id="walkthrough-8" src="./The JavaScript Event Loop_files/stack-queue-heap-08.png"
+            style="display: none;">
+          <img id="walkthrough-9" src="./The JavaScript Event Loop_files/stack-queue-heap-09.png"
+            style="display: none;">
+          <img id="walkthrough-10" src="./The JavaScript Event Loop_files/stack-queue-heap-10.png"
+            style="display: none;">
+          <img id="walkthrough-11" src="./The JavaScript Event Loop_files/stack-queue-heap-11.png"
+            style="display: none;">
+          <img id="walkthrough-12" src="./The JavaScript Event Loop_files/stack-queue-heap-12.png"
+            style="display: none;">
+          <img id="walkthrough-13" src="./The JavaScript Event Loop_files/stack-queue-heap-13.png"
+            style="display: none;">
+          <img id="walkthrough-14" src="./The JavaScript Event Loop_files/stack-queue-heap-14.png"
+            style="display: none;">
+        </div>
+
+        <pre>            <code class="javascript hljs" data-noescape="">
+              <span class="fragment highlight-current-green" data-fragment-index="0" data-walkthrough="1"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">run</span>(<span class="hljs-params"></span>) </span>{</span>
+                <span class="fragment highlight-current-green" data-fragment-index="4"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Adding code to the stack"</span>);</span>
+
+                <span class="fragment highlight-current-green" data-fragment-index="5">setTimeout</span>(<span class="fragment highlight-current-green" data-fragment-index="1" data-walkthrough="2"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">c</span>(<span class="hljs-params"></span>) </span>{ <span class="hljs-comment">// c() Added somewhere in Heap</span></span>
+                  <span class="fragment highlight-current-green" data-fragment-index="15"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"c() Running next code from queue"</span>);</span>
+                }, <span class="hljs-number">0</span>);
+
+                <span class="fragment highlight-current-green" data-fragment-index="2" data-walkthrough="3"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">a</span>(<span class="hljs-params">x</span>) </span>{ <span class="hljs-comment">// a() Added somewhere in Heap</span></span>
+                  <span class="fragment highlight-current-green" data-fragment-index="7"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"a() frame added to stack"</span>);</span>
+                  <span class="fragment highlight-current-green" data-fragment-index="8">b(x);</span>
+                  <span class="fragment highlight-current-green" data-fragment-index="12"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"a() frame removed from stack"</span>);</span>
+                }
+
+                <span class="fragment highlight-current-green" data-fragment-index="3" data-walkthrough="4"><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">b</span>(<span class="hljs-params">y</span>) </span>{ <span class="hljs-comment">// b() Added somewhere in Heap</span></span>
+                  <span class="fragment highlight-current-green" data-fragment-index="9"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"b() frame added to stack"</span>);</span>
+                  <span class="fragment highlight-current-green" data-fragment-index="10"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Value passed in is "</span> + y);</span>
+                  <span class="fragment highlight-current-green" data-fragment-index="11"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"b() frame removed from stack"</span>);</span>
+                }
+
+                <span class="fragment highlight-current-green" data-fragment-index="6">a(<span class="hljs-number">42</span>);</span>
+
+                <span class="fragment highlight-current-green" data-fragment-index="13"><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Ending work for this stack"</span>);</span><span class="fragment highlight-current-green" data-fragment-index="14"></span><span class="fragment highlight-current-green" data-fragment-index="16"></span>
+              }
+            </code>
+          </pre>
+      </section>
+
+      <!-- <section class="future" style="top: 132px; display: block;" hidden="" aria-hidden="true">
+        <h3>Code-run Visualized with Dev Tools</h3>
+
+        <img src="./The JavaScript Event Loop_files/flamegraph.png">
+
+        <ul>
+          <li>This type of visualization is a Flame Graph</li>
+          <li>Interactive Demo:
+            <code><a target="_blank" href="https://thomashunter.name/presentations/javascript-event-loop/examples/flamegraph.html">bit.ly/2kF3TMh</a></code>
+          </li>
+        </ul>
+      </section> -->
+
+      <!--
+        <section>
+          <h3>TODO: Timing Slide</h3>
+        </section>
+        -->
+
+      <!-- <section hidden="" aria-hidden="true" class="future" style="top: 0px; display: block;">
+          <div class="floater floater-right">
+            <button id="console-order">Execute Code</button>
+            <code id="console-order-result">...</code>
+          </div>
+
+          <h3>Interview Question</h3>
+
+          <ul>
+            <li>In what order are the letters output?</li>
+            <li>Extra Credit: How long does each letter take?</li>
+          </ul>
+
+          <pre>            <code class="javascript hljs">
+
+setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{ <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'A'</span>); }, <span class="hljs-number">0</span>);
+
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'B'</span>);
+
+setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{ <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'C'</span>); }, <span class="hljs-number">100</span>);
+
+setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{ <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'D'</span>); }, <span class="hljs-number">0</span>);
+
+<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">while</span> (i &lt; <span class="hljs-number">200000000</span>) { <span class="hljs-comment">// Takes ~500ms to run this loop</span>
+  <span class="hljs-keyword">var</span> ignore = <span class="hljs-built_in">Math</span>.sqrt(i);
+  i++;
+}
+
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'E'</span>);
+            </code>
+          </pre>
+        </section> -->
+      <script type="text/javascript" async="" src="./The JavaScript Event Loop_files/countly.min.js"></script>
+      <script>
+        (function () {
+          var button = document.getElementById('console-order');
+          var result = document.getElementById('console-order-result');
+
+          function log(letter, time) {
+            result.innerHTML += letter + ": " + time + "ms<br />";
+          }
+
+          button.addEventListener('click', function () {
+            result.innerHTML = "";
+            var start = Date.now();
+
+            setTimeout(function () { log('A', Date.now() - start); }, 0);
+            log('B', Date.now() - start);
+            setTimeout(function () { log('C', Date.now() - start); }, 100);
+            setTimeout(function () { log('D', Date.now() - start); }, 0);
+
+            var i = 0;
+            while (i < 200000000) { // Takes ~500ms to run this loop
+              var ignore = Math.sqrt(i);
+              i++;
+            }
+
+            log('E', Date.now() - start);
+          });
+        })();
+      </script>
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 197px; display: none;">
+        <h1>Part II</h1>
+        <h2>I/O Considerations</h2>
+      </section>
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <h3>Your App is Mostly Asleep</h3>
+        <ul>
+          <li>Browser
+            <ul>
+              <li>Wait for a click to happen</li>
+              <li>Wait for AJAX response</li>
+            </ul>
+          </li>
+          <li>Node.js
+            <ul>
+              <li>All I/O is non-blocking (libuv)</li>
+              <li>C++ API does the heavy lifting</li>
+              <li>Once I/O is complete callback is queued up</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <h3>Sequential vs Parallel</h3>
+        <ul>
+          <li>Classical web apps perform each I/O Sequentially</li>
+          <li>With an Event Loop, they can be run in Parallel</li>
+          <li>Most time waiting for I/O; Sequential is inefficient</li>
+        </ul>
+
+        <h5>Sequential I/O</h5>
+        <img width="480" height="92" src="./The JavaScript Event Loop_files/sequential.svg">
+
+        <h5>Parallel I/O</h5>
+        <img width="480" height="92" src="./The JavaScript Event Loop_files/parallel.svg">
+      </section>
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <h4>Why Single-Threaded Event Loops are Awesome:</h4>
+        <ul>
+          <li>No concurrent memory access problems</li>
+          <li>Usually web apps spend most time waiting on I/O</li>
+          <li>Easily perform I/O operations “in parallel”
+            <ul>
+              <li>Thanks to non-blocking APIs</li>
+            </ul>
+          </li>
+          <li>Long running apps, don’t need separate web servers</li>
+        </ul>
+      </section>
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <h4>Why Single-Threaded Event Loops aren’t Awesome:</h4>
+
+        <ul>
+          <li>CPU intensive work will block your process</li>
+          <li>Memory leaks can happen</li>
+          <li>A single JavaScript instance cannot fully utilize CPU</li>
+        </ul>
+      </section>
+
+      <!-- <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <h1>Part III</h1>
+        <h2>Breaking up heavy workloads</h2>
+      </section> -->
+
+      <!-- <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <div class="floater floater-left">
+          <button id="dom-single-stack">Single Stack</button>
+          <code id="dom-single-stack-result">...</code>
+        </div>
+
+        <h3>Single Stack: Freeze Rendering</h3>
+
+        <img src="./The JavaScript Event Loop_files/single-stack.png" style="zoom: 0.8;">
+
+        <pre>            <code class="javascript hljs">
+              <span class="hljs-keyword">var</span> LIMIT = <span class="hljs-number">200000</span>;
+
+              <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">drawMany</span>(<span class="hljs-params"></span>) </span>{
+                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; LIMIT; i++) {
+                  output.appendChild(<span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'div'</span>));
+                }
+              }
+            </code>
+          </pre>
+
+        <div class="dom-output" id="dom-output-single"></div>
+
+        <script>
+          (function () {
+            var LIMIT = 200000;
+            var RENDER_WAIT = 10;
+
+            var buttonSingleStack = document.getElementById('dom-single-stack');
+            var resultSingleStack = document.getElementById('dom-single-stack-result');
+
+            var output = document.getElementById('dom-output-single');
+
+            function clear() {
+              while (output.firstChild) {
+                output.removeChild(output.firstChild);
+              }
+            }
+
+            function hide() {
+              output.style.display = "none";
+            }
+
+            function show() {
+              output.style.display = "block";
+            }
+
+            function drawMany() {
+              for (var i = 0; i < LIMIT; i++) {
+                output.appendChild(document.createElement('div'));
+              }
+            }
+
+            buttonSingleStack.addEventListener('click', function () {
+              clear();
+              resultSingleStack.innerHTML = '...';
+              // hide();
+
+              setTimeout(function () {
+                var start = new Date();
+
+                drawMany();
+
+                setTimeout(function () {
+                  var end = new Date();
+                  // show();
+
+                  resultSingleStack.innerHTML = ((end - start) - RENDER_WAIT) + 'ms';
+
+                  clear();
+                }, RENDER_WAIT); // Wait long enough so that rendering kicks in for certain
+              }, RENDER_WAIT);
+            });
+          })();
+        </script>
+      </section> -->
+
+      <!-- <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <div class="floater floater-left">
+          <button id="dom-many-stack">Many Stacks</button>
+          <code id="dom-many-stack-result">...</code>
+        </div>
+
+        <h3>Queueing: Allows Rendering</h3>
+
+        <img src="./The JavaScript Event Loop_files/many-stacks.png" style="zoom: 0.8;">
+
+        <pre>            <code class="javascript hljs">
+              <span class="hljs-keyword">var</span> LIMIT = <span class="hljs-number">200000</span>;
+              <span class="hljs-keyword">var</span> CHUNK = <span class="hljs-number">1000</span>;
+
+              <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">drawFew</span>(<span class="hljs-params">start, callback</span>) </span>{
+                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; CHUNK; i++) {
+                  output.appendChild(<span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'div'</span>));
+                }
+
+                <span class="hljs-keyword">if</span> (start &gt;= LIMIT) <span class="hljs-keyword">return</span> callback();
+
+                setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+                  drawFew(start + CHUNK, callback);
+                }, <span class="hljs-number">0</span>);
+              }
+            </code>
+          </pre>
+
+        <div class="dom-output" id="dom-output-many"></div>
+
+        <script>
+          (function () {
+            var LIMIT = 200000;
+            var CHUNK = 1000;
+            var RENDER_WAIT = 10;
+
+            var buttonManyStack = document.getElementById('dom-many-stack');
+            var resultManyStack = document.getElementById('dom-many-stack-result');
+
+            var output = document.getElementById('dom-output-many');
+
+            function clear() {
+              while (output.firstChild) {
+                output.removeChild(output.firstChild);
+              }
+            }
+
+            function hide() {
+              output.style.display = "none";
+            }
+
+            function show() {
+              output.style.display = "block";
+            }
+
+            function drawFew(start, callback) {
+              for (var i = 0; i < CHUNK; i++) {
+                output.appendChild(document.createElement('div'));
+              }
+
+              if (start >= LIMIT) {
+                return callback();
+              }
+
+              setTimeout(function () {
+                drawFew(start + CHUNK, callback);
+              }, 0);
+            }
+
+            buttonManyStack.addEventListener('click', function () {
+              clear();
+
+              // hide();
+              var start = new Date();
+              resultManyStack.innerHTML = '...';
+
+              drawFew(0, function () {
+                var end = new Date();
+                // show();
+
+                resultManyStack.innerHTML = (end - start) + 'ms';
+
+                clear();
+              });
+            });
+          })();
+        </script>
+      </section> -->
+
+      <!-- <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <div class="floater floater-left">
+          <button id="work-current">Current Thread</button>
+          <code id="work-current-result">...</code>
+        </div>
+
+        <script>
+          (function () {
+            var buttonCurrent = document.getElementById('work-current');
+            var resultCurrent = document.getElementById('work-current-result');
+
+            buttonCurrent.addEventListener('click', function () {
+              var start = new Date();
+              resultCurrent.innerHTML = '...';
+              var pi = 0;
+              var n = 1;
+              for (i = 0; i <= 1000000000; i++) {
+                pi = pi + (4 / n) - (4 / (n + 2));
+                n = n + 4;
+              }
+
+              var end = new Date();
+
+              void pi;
+
+              resultCurrent.innerHTML = (end - start) + 'ms';
+            });
+          }());
+        </script>
+
+        <div class="floater floater-right ">
+          <button id="work-worker">Worker Thread</button>
+          <code id="work-worker-result">...</code>
+        </div>
+
+        <script>
+          (function () {
+            var buttonWorker = document.getElementById('work-worker');
+            var resultWorker = document.getElementById('work-worker-result');
+
+            try {
+              var worker = new Worker('scripts/task.js');
+
+              var start, end;
+
+              worker.onmessage = function (e) {
+                var end = new Date();
+
+                void e.data;
+                resultWorker.innerHTML = (end - start) + 'ms';
+                console.log(e);
+              };
+
+              buttonWorker.addEventListener('click', function () {
+                start = new Date();
+                resultWorker.innerHTML = '...';
+                worker.postMessage({ iterations: 1000000000 });
+              });
+            } catch (e) {
+              console.error(e);
+              resultWorker.innerHTML = e.name;
+            }
+          }());
+        </script>
+
+        <h3>Web Workers</h3>
+        <ul>
+          <li>Separate JavaScript instance, has its own Event Loop</li>
+          <li>Message Passing via JSON structures</li>
+          <li>No deadlocks or race conditions, working with “copies”</li>
+          <li>Can't touch the DOM, tho AJAX and WebSockets work</li>
+        </ul>
+
+        <pre>            <code class="javascript hljs">
+              <span class="hljs-comment">// main.js</span>
+              <span class="hljs-keyword">var</span> worker = <span class="hljs-keyword">new</span> Worker(<span class="hljs-string">'task.js'</span>);
+              worker.postMessage({iterations: <span class="hljs-number">5000000000</span>});
+              worker.onmessage = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) </span>{ <span class="hljs-built_in">console</span>.log(e.data); };
+
+              <span class="hljs-comment">// task.js</span>
+              onmessage = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>) </span>{
+                <span class="hljs-keyword">var</span> pi = <span class="hljs-number">0</span>, n = <span class="hljs-number">1</span>;
+                <span class="hljs-keyword">for</span> (i = <span class="hljs-number">0</span>; i &lt;= e.data.iterations; i++) {
+                  pi = pi + (<span class="hljs-number">4</span>/n) - (<span class="hljs-number">4</span> / (n + <span class="hljs-number">2</span>)); n += <span class="hljs-number">4</span>;
+                }
+                postMessage(pi);
+              };
+            </code>
+          </pre>
+      </section> -->
+
+      <!-- <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <h3>Node.js Load Balancing</h3>
+        <ul>
+          <li>Route requests between multiple application instances</li>
+        </ul>
+        <pre>            <code class="javascript hljs">
+<span class="hljs-keyword">var</span> cluster = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cluster'</span>);
+<span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+
+<span class="hljs-keyword">if</span> (cluster.isMaster) {
+  cluster.fork(); cluster.fork(); cluster.fork();
+} <span class="hljs-keyword">else</span> {
+  http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req, res</span>) </span>{
+    res.end(<span class="hljs-string">"Hello World from: "</span> + process.pid);
+  }).listen(<span class="hljs-number">80</span>);
+}
+            </code>
+          </pre>
+        <img src="./The JavaScript Event Loop_files/node-load-balancer.png" width="421" height="162">
+      </section> -->
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none;">
+        <img src="./The JavaScript Event Loop_files/download.jpeg" alt="">        
+      </section>
+
+      <section hidden="" aria-hidden="true" class="future" style="top: 330px; display: none; ">
+        <h2>References</h4> 
+        <ul>
+          <li>
+            <p>Visual representation of the event loop: <a href="http://latentflip.com/loupe" class="monospace">LatentFlip</a></p>
+          </li>
+          <li>
+            <p>Video lecture: <a href="//www.youtube.com/embed/8aGhZQkoFbQ" class="monospace">Youtube</a></p>
+          </li>
+          <li>
+            <p>Understanding Blocking/Non-blocking codes: <a href="https://medium.com/@siddharthac6/javascript-execution-of-synchronous-and-asynchronous-codes-40f3a199e687" class="monospace">Medium</a></p>
+          </li>
+          <li>
+            <p>Event loop explained: <a href="https://medium.com/front-end-weekly/javascript-event-loop-explained-4cd26af121d4" class="monospace">Medium</a></p>
+          </li>
+        </ul>
+      </section>
+    </div>
+    <div class="backgrounds">
+      <div class="slide-background past" data-loaded="true" style="display: none;"></div>
+      <div class="slide-background past" data-loaded="true" style="display: none;"></div>
+      <div class="slide-background past" data-loaded="true" style="display: none;"></div>
+      <div class="slide-background past" style="display: block;" data-loaded="true"></div>
+      <div class="slide-background past" style="display: block;" data-loaded="true"></div>
+      <div class="slide-background present" style="display: block;" data-loaded="true"></div>
+      <div class="slide-background future" style="display: block;" data-loaded="true"></div>
+      <div class="slide-background future" style="display: block;" data-loaded="true"></div>
+      <div class="slide-background future" style="display: none;" data-loaded="true"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+      <div class="slide-background future" style="display: none;"></div>
+    </div>
+    <div class="progress" style="display: block;"><span style="width: 514.722px;"></span></div>
+    <aside class="controls" style="display: block;"><button class="navigate-left enabled"
+        aria-label="previous slide"></button><button class="navigate-right enabled fragmented"
+        aria-label="next slide"></button><button class="navigate-up" aria-label="above slide"></button><button
+        class="navigate-down" aria-label="below slide"></button></aside>
+    <div class="slide-number" style="display: none;"></div>
+    <div class="speaker-notes" data-prevent-swipe=""></div>
+    <div class="pause-overlay"></div>
+    <div id="aria-status-div" aria-live="polite" aria-atomic="true"
+      style="position: absolute; height: 1px; width: 1px; overflow: hidden; clip: rect(1px, 1px, 1px, 1px);">
+      Example Code-run
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      function run() {
+      console.log("Adding code to the stack");
+
+      setTimeout(function c() { // c() Added somewhere in Heap
+      console.log("c() Running next code from queue");
+      }, 0);
+
+      function a(x) { // a() Added somewhere in Heap
+      console.log("a() frame added to stack");
+      b(x);
+      console.log("a() frame removed from stack");
+      }
+
+      function b(y) { // b() Added somewhere in Heap
+      console.log("b() frame added to stack");
+      console.log("Value passed in is " + y);
+      console.log("b() frame removed from stack");
+      }
+
+      a(42);
+
+      console.log("Ending work for this stack");
+      }
+
+
+    </div>
+  </div>
+
+  <script src="./The JavaScript Event Loop_files/head.min.js"></script>
+  <script src="./The JavaScript Event Loop_files/reveal.js"></script>
+  <script src="./The JavaScript Event Loop_files/fpsmeter.min.js"></script>
+  <script>
+    var meter = new FPSMeter(document.getElementById('fps-container'), {
+      show: 'ms',
+      heat: true,
+      graph: true,
+      left: 'auto',
+      right: '5px'
+    });
+    function tick() {
+      meter.tick();
+      requestAnimationFrame(tick);
+    }
+
+    tick();
+  </script>
+
+  <script>
+    Reveal.initialize({
+      center: true,
+      history: true,
+      transition: 'convex',
+      dependencies: [
+        {
+          src: './reveal.js-3.2.0/plugin/highlight/highlight.js',
+          async: true,
+          callback: function () {
+            hljs.initHighlightingOnLoad();
+          }
+        }
+      ]
+    });
+
+    var walkthrough = [];
+
+    for (var i = 0; i <= 17; i++) {
+      walkthrough.push(document.getElementById('walkthrough-' + i));
+    }
+
+    // Lookup from fragment-index to image offset
+    // Reveal.js shows index of hidden element, not newly displayed element :(
+    var lookup = {
+      0: 0,
+      1: 1,
+      2: 2,
+      3: 3,
+      4: 4,
+      5: 5,
+      6: 6,
+      7: 6,
+      8: 7,
+      9: 7,
+      10: 8,
+      11: 8,
+      12: 8,
+      13: 9,
+      14: 10,
+      15: 11,
+      16: 12,
+      17: 14
+    };
+
+    function hideAll() {
+      for (var i = 0; i < 15; i++) {
+        walkthrough[i].style.display = 'none';
+      }
+    }
+
+    Reveal.addEventListener('fragmentshown', function (event) {
+      var frag = Math.floor(event.fragment.dataset.fragmentIndex) + 1;
+      var image = lookup[frag];
+      hideAll();
+      walkthrough[image].style.display = 'block';
+    });
+
+    Reveal.addEventListener('fragmenthidden', function (event) {
+      var frag = Math.floor(event.fragment.dataset.fragmentIndex);
+      var image = lookup[frag];
+      hideAll();
+      walkthrough[image].style.display = 'block';
+    });
+  </script>
+  <script type="text/javascript" src="./The JavaScript Event Loop_files/highlight.js"></script>
+  <script type="text/javascript">
+    var Countly = {
+      q: [['track_sessions'], ['track_pageview'], ['track_clicks']],
+      app_key: 'eef3b12942f938d7be826186be17930bd522d315',
+      url: 'https://analytics.phobosrising.co'
+    };
+    (function () {
+      var cly = document.createElement('script'); cly.type = 'text/javascript';
+      cly.async = true; cly.src = '/scripts/countly.min.js';
+      cly.onload = function () { Countly.init() };
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(cly, s);
+    })();
+  </script>
+  <noscript><img
+      src='https://analytics.phobosrising.co/pixel.png?app_key=d91922f2a4106e3f1b2851a7bc4852606a289177&begin_session=1' /></noscript>
+
+
+</body>
+
+</html>
